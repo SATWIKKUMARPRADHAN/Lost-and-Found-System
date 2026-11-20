@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5 col-xl-4">
+            <div class="text-center mb-4">
+                <span class="brand-symbol display-6 mb-2 d-inline-block text-dark">✦</span>
+                <h3 class="fw-bold text-dark">Welcome back</h3>
+                <p class="text-secondary small">Sign in to report items or track your claims</p>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label small fw-semibold text-dark">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.password.id_for_label }}" class="form-label small fw-semibold text-dark">Password</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                            <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-semibold py-2">
+                            Sign In
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <span class="small text-secondary">Don't have a student account?</span>
+                        <a href="{% url 'register' %}" class="small text-dark fw-semibold ms-1 text-decoration-none">Sign up</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

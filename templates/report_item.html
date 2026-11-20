@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Report Lost or Found Item - Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+            <!-- Header card -->
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-dark tracking-tight">Report an Item</h2>
+                <p class="text-secondary small">
+                    Help reunite belongings across campus. Provide accurate details to speed up discovery.
+                </p>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                <form method="POST" enctype="multipart/form-data" novalidate id="reportForm">
+                    {% csrf_token %}
+
+                    <!-- Report Type Selector -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark">Report Type</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="item_type" id="type_lost" value="LOST" {% if form.item_type.value == 'LOST' or not form.item_type.value %}checked{% endif %} onchange="toggleVerificationFields()">
+                                <label class="btn btn-outline-danger w-100 py-3 rounded-3 d-flex flex-column align-items-center gap-1" for="type_lost">
+                                    <i class="bi bi-question-circle fs-4"></i>
+                                    <span class="fw-bold">I Lost an Item</span>
+                                    <span class="small text-muted">Looking for my belonging</span>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="item_type" id="type_found" value="FOUND" {% if form.item_type.value == 'FOUND' %}checked{% endif %} onchange="toggleVerificationFields()">
+                                <label class="btn btn-outline-primary w-100 py-3 rounded-3 d-flex flex-column align-items-center gap-1" for="type_found">
+                                    <i class="bi bi-box2-heart fs-4"></i>
+                                    <span class="fw-bold">I Found an Item</span>
+                                    <span class="small text-muted">Awaiting rightful owner</span>
+                                </label>
+                            </div>
+                        </div>
+                        {% if form.item_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.item_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label fw-semibold text-dark">Item Title *</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Category & Incident Date Grid -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.category.id_for_label }}" class="form-label fw-semibold text-dark">Category *</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.incident_date.id_for_label }}" class="form-label fw-semibold text-dark">Incident Date *</label>
+                            {{ form.incident_date }}
+                            {% if form.incident_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.incident_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Campus Location -->
+                    <div class="mb-3">
+                        <label for="{{ form.location.id_for_label }}" class="form-label fw-semibold text-dark">Campus Location *</label>
+                        {{ form.location }}
+                        <div class="form-text small">e.g., Central Library 2nd Floor, Engineering Hall 104, Student Union Cafeteria</div>
+                        {% if form.location.errors %}
+                            <div class="text-danger small mt-1">{{ form.location.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Public Description -->
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold text-dark">Public Description *</label>
+                        {{ form.description }}
+                        <div class="form-text small">Provide general visual details (brand, color, size). Do <strong>not</strong> reveal the secret verification detail in this public box.</div>
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Optional Photograph -->
+                    <div class="mb-4">
+                        <label for="{{ form.image.id_for_label }}" class="form-label fw-semibold text-dark">Item Photograph (Optional)</label>
+                        {{ form.image }}
+                        <div class="form-text small">Attach a clear photo. Supported formats: JPG, PNG, WEBP.</div>
+                        {% if form.image.errors %}
+                            <div class="text-danger small mt-1">{{ form.image.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Cryptographic Verification Box (Only for FOUND items) -->
+                    <div id="verificationSection" class="p-4 bg-light rounded-4 mb-4 border border-primary-subtle transition-all">
+                        <div class="d-flex align-items-center gap-2 mb-2 text-primary">
+                            <i class="bi bi-shield-lock-fill fs-5"></i>
+                            <h5 class="fw-bold mb-0">Found Item Verification Challenge</h5>
+                        </div>
+                        <p class="small text-secondary mb-3">
+                            To ensure that only the genuine owner can claim this found item, set a secret question whose answer is known only to them. 
+                            The expected answer will be <strong>securely hashed</strong> and never exposed publicly.
+                        </p>
+
+                        <div class="mb-3">
+                            <label for="{{ form.verification_question.id_for_label }}" class="form-label fw-semibold text-dark">
+                                Private Verification Question *
+                            </label>
+                            {{ form.verification_question }}
+                            <div class="form-text small">e.g., "What specific keychain or sticker is attached?" or "What color is the inside lining?"</div>
+                            {% if form.verification_question.errors %}
+                                <div class="text-danger small mt-1">{{ form.verification_question.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-0">
+                            <label for="{{ form.verification_answer.id_for_label }}" class="form-label fw-semibold text-dark">
+                                Expected Verification Answer *
+                            </label>
+                            {{ form.verification_answer }}
+                            <div class="form-text small">e.g., "NASA sticker on top left" or "Blue dinosaur keychain". Comparison is case-insensitive.</div>
+                            {% if form.verification_answer.errors %}
+                                <div class="text-danger small mt-1">{{ form.verification_answer.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-dark btn-lg rounded-pill fw-semibold py-3">
+                            <i class="bi bi-check2-circle me-1"></i> Submit Report
+                        </button>
+                        <a href="{% url 'home' %}" class="btn btn-link text-decoration-none text-muted small text-center">Cancel and Return</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleVerificationFields() {
+    const isFound = document.getElementById('type_found').checked;
+    const vSection = document.getElementById('verificationSection');
+    if (isFound) {
+        vSection.style.display = 'block';
+    } else {
+        vSection.style.display = 'none';
+    }
+}
+document.addEventListener('DOMContentLoaded', toggleVerificationFields);
+</script>
+{% endblock %}

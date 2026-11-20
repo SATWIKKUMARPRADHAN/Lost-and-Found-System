@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}My Reports & Claims - Campus Lost & Found{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold text-dark tracking-tight mb-1">Student Portal</h2>
+            <p class="text-secondary small mb-0">Track your reported items and status of your ownership claims.</p>
+        </div>
+        <div>
+            <a href="{% url 'report_item' %}" class="btn btn-dark btn-sm rounded-pill px-3 py-2 fw-medium">
+                <i class="bi bi-plus-lg me-1"></i> Report New Item
+            </a>
+        </div>
+    </div>
+
+    <!-- Navigation Pills/Tabs -->
+    <ul class="nav nav-pills mb-4 bg-white p-1 rounded-3 shadow-sm border w-fit" id="portalTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-4 text-sm fw-medium" id="reports-tab" data-bs-toggle="pill" data-bs-target="#reports-pane" type="button" role="tab" aria-controls="reports-pane" aria-selected="true">
+                My Reported Items ({{ my_reports.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4 text-sm fw-medium" id="claims-tab" data-bs-toggle="pill" data-bs-target="#claims-pane" type="button" role="tab" aria-controls="claims-pane" aria-selected="false">
+                My Submitted Claims ({{ my_claims.count }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="portalTabContent">
+        <!-- Reports Tab -->
+        <div class="tab-pane fade show active" id="reports-pane" role="tabpanel" aria-labelledby="reports-tab">
+            {% if my_reports %}
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-xs text-secondary text-uppercase tracking-wider">
+                                <tr>
+                                    <th class="ps-4">Item</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Location</th>
+                                    <th>Reported Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in my_reports %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <a href="{% url 'item_detail' item.pk %}" class="fw-semibold text-dark text-decoration-none">
+                                                {{ item.title }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="text-xs fw-semibold {% if item.item_type == 'LOST' %}text-danger{% else %}text-primary{% endif %}">
+                                                {{ item.get_item_type_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-secondary small">{{ item.get_category_display }}</td>
+                                        <td class="text-secondary small">{{ item.location }}</td>
+                                        <td class="text-muted small">{{ item.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge text-bg-{% if item.status == 'OPEN' %}success{% elif item.status == 'CLAIMED' %}warning{% else %}secondary{% endif %}">
+                                                {{ item.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <a href="{% url 'item_detail' item.pk %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                    <i class="bi bi-folder2-open display-4 text-muted opacity-25 mb-3"></i>
+                    <h5 class="fw-bold text-dark">No reports submitted yet</h5>
+                    <p class="text-secondary small">Did you lose or find something on campus? Submit a report now.</p>
+                    <div>
+                        <a href="{% url 'report_item' %}" class="btn btn-dark btn-sm rounded-pill px-3 py-2">
+                            Report an Item
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Claims Tab -->
+        <div class="tab-pane fade" id="claims-pane" role="tabpanel" aria-labelledby="claims-tab">
+            {% if my_claims %}
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-xs text-secondary text-uppercase tracking-wider">
+                                <tr>
+                                    <th class="ps-4">Claimed Item</th>
+                                    <th>Submitted On</th>
+                                    <th>Verification</th>
+                                    <th>Status</th>
+                                    <th>Reviewed</th>
+                                    <th class="text-end pe-4">Item Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for claim in my_claims %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <a href="{% url 'item_detail' claim.item.pk %}" class="fw-semibold text-dark text-decoration-none">
+                                                {{ claim.item.title }}
+                                            </a>
+                                            <div class="text-xs text-muted">Found at {{ claim.item.location }}</div>
+                                        </td>
+                                        <td class="text-secondary small">{{ claim.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% if claim.verification_passed %}
+                                                <span class="text-success text-xs fw-medium d-inline-flex align-items-center gap-1">
+                                                    <i class="bi bi-shield-check"></i> Passed Challenge
+                                                </span>
+                                            {% else %}
+                                                <span class="text-danger text-xs fw-medium d-inline-flex align-items-center gap-1">
+                                                    <i class="bi bi-shield-x"></i> Failed Challenge
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge text-bg-{% if claim.status == 'APPROVED' %}success{% elif claim.status == 'PENDING' %}warning{% else %}danger{% endif %}">
+                                                {{ claim.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-muted small">
+                                            {{ claim.reviewed_at|date:"M d, Y"|default:"Awaiting Review" }}
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <a href="{% url 'item_detail' claim.item.pk %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                                View Item
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                    <i class="bi bi-shield-check display-4 text-muted opacity-25 mb-3"></i>
+                    <h5 class="fw-bold text-dark">No submitted claims</h5>
+                    <p class="text-secondary small">Browse found items to claim anything that belongs to you.</p>
+                    <div>
+                        <a href="{% url 'home' %}?type=FOUND" class="btn btn-dark btn-sm rounded-pill px-3 py-2">
+                            Browse Found Items
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

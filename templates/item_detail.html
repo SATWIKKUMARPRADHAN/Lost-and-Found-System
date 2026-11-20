@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ item.title }} - Campus Lost and Found{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-secondary text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'home' %}?type={{ item.item_type }}" class="text-secondary text-decoration-none">
+                    {{ item.get_item_type_display }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active text-dark" aria-current="page">{{ item.title|truncatechars:35 }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4 justify-content-center">
+        <!-- Item Visual / Image Column -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white h-100">
+                {% if item.image %}
+                    <img src="{{ item.image.url }}" class="img-fluid w-100 object-fit-cover detail-image" alt="{{ item.title }}">
+                {% else %}
+                    <div class="d-flex flex-column align-items-center justify-content-center p-5 text-muted detail-placeholder">
+                        <i class="bi bi-camera display-1 opacity-20 mb-3"></i>
+                        <p class="small text-secondary mb-0">No photograph was attached with this report.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Details Column -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Quiet metadata kicker -->
+                    <div class="d-flex align-items-center gap-2 text-xs mb-3">
+                        <span class="{% if item.item_type == 'LOST' %}text-danger fw-semibold{% else %}text-primary fw-semibold{% endif %}">
+                            {{ item.get_item_type_display }}
+                        </span>
+                        <span aria-hidden="true" class="text-muted">&middot;</span>
+                        <span class="text-secondary">{{ item.get_category_display }}</span>
+                        <span aria-hidden="true" class="text-muted">&middot;</span>
+                        <span class="fw-medium {% if item.status == 'OPEN' %}text-success{% elif item.status == 'CLAIMED' %}text-warning{% else %}text-muted{% endif %}">
+                            {{ item.get_status_display }}
+                        </span>
+                    </div>
+
+                    <h2 class="fw-bold text-dark mb-3">{{ item.title }}</h2>
+
+                    <div class="bg-light rounded-3 p-3 mb-4">
+                        <div class="row g-2 text-xs text-secondary">
+                            <div class="col-6">
+                                <span class="d-block text-muted">Campus Location</span>
+                                <strong class="text-dark"><i class="bi bi-geo-alt me-1 text-danger"></i>{{ item.location }}</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block text-muted">Incident Date</span>
+                                <strong class="text-dark"><i class="bi bi-calendar-event me-1"></i>{{ item.incident_date|date:"F d, Y" }}</strong>
+                            </div>
+                            <div class="col-6 mt-3">
+                                <span class="d-block text-muted">Reported By</span>
+                                <strong class="text-dark"><i class="bi bi-person me-1"></i>{{ item.reported_by.username }}</strong>
+                            </div>
+                            <div class="col-6 mt-3">
+                                <span class="d-block text-muted">Reported On</span>
+                                <strong class="text-dark"><i class="bi bi-clock me-1"></i>{{ item.created_at|date:"M d, Y, g:i a" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-uppercase text-muted text-xs fw-bold tracking-wider mb-2">Description</h6>
+                        <p class="text-secondary fs-6 leading-relaxed mb-0" style="white-space: pre-line;">
+                            {{ item.description }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Claim / Action Area -->
+                <div class="pt-4 border-top mt-4">
+                    {% if item.status == 'RETURNED' %}
+                        <div class="alert alert-success border-0 rounded-3 d-flex align-items-center gap-2 mb-0">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <div>
+                                <strong>Item Returned</strong><br>
+                                <span class="small">This item has been successfully verified and returned to its rightful owner.</span>
+                            </div>
+                        </div>
+
+                    {% elif item.item_type == 'FOUND' %}
+                        {% if user_has_claimed %}
+                            <div class="alert alert-info border-0 rounded-3 mb-0">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <i class="bi bi-hourglass-split"></i>
+                                    <strong>Claim Under Review (Status: {{ user_claim.get_status_display }})</strong>
+                                </div>
+                                <p class="small mb-0 text-secondary">
+                                    You have submitted a claim with verified credentials. Campus administrative staff will review your claim and schedule handover.
+                                </p>
+                            </div>
+                        {% elif can_claim %}
+                            <div class="p-3 bg-light rounded-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-dark">Is this your item?</h6>
+                                    <p class="small text-secondary mb-0">Answer the secret verification question to prove ownership.</p>
+                                </div>
+                                <a href="{% url 'claim_item' item.pk %}" class="btn btn-dark rounded-pill px-4 py-2 text-nowrap fw-medium">
+                                    <i class="bi bi-shield-lock me-1"></i> Claim This Item
+                                </a>
+                            </div>
+                        {% elif not user.is_authenticated %}
+                            <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center">
+                                <span class="small text-secondary">Sign in with your student account to claim this found item.</span>
+                                <a href="{% url 'login' %}?next={% url 'item_detail' item.pk %}" class="btn btn-outline-dark btn-sm rounded-pill px-3">
+                                    Sign In to Claim
+                                </a>
+                            </div>
+                        {% elif item.reported_by == user %}
+                            <div class="alert alert-light border text-secondary small rounded-3 mb-0">
+                                <i class="bi bi-info-circle me-1"></i> You reported this item. You cannot submit a claim for an item you found.
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <!-- Lost item notice -->
+                        <div class="alert alert-light border rounded-3 text-secondary small mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-lightbulb text-warning fs-5"></i>
+                            <div>
+                                Did you find this lost belonging? Please submit a <strong>Found Item Report</strong> or hand it over to Campus Security.
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Admin Quick View of Claims -->
+                    {% if user.is_staff and claims_list %}
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="text-xs text-uppercase fw-bold text-muted mb-2">Admin View: Submitted Claims ({{ claims_list.count }})</h6>
+                            <ul class="list-group list-group-flush rounded-3 small">
+                                {% for cl in claims_list %}
+                                    <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <span>
+                                            Claimant: <strong>{{ cl.claimant.username }}</strong> &middot; {{ cl.created_at|date:"M d" }}
+                                            {% if cl.verification_passed %}
+                                                <i class="bi bi-check-circle-fill text-success ms-1" title="Answer Verified"></i>
+                                            {% endif %}
+                                        </span>
+                                        <span class="badge text-bg-{% if cl.status == 'APPROVED' %}success{% elif cl.status == 'PENDING' %}warning{% else %}secondary{% endif %}">
+                                            {{ cl.get_status_display }}
+                                        </span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
